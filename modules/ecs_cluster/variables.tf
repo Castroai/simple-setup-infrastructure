@@ -3,3 +3,6 @@ variable "cluster_name" {
   type        = string
 }
 
+variable "vpc_id" {
+  description = "value of the vpc id"
+}

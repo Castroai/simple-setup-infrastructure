@@ -8,8 +8,8 @@ resource "aws_vpc" "my_vpc" {
   enable_dns_hostnames = true
   enable_dns_support   = true
   tags = {
-    name        = "my_vpc"
-    environment = "dev"
+    Name        = "my_vpc"
+    Environment = "dev"
   }
 }
 # Public Subnet 1
@@ -21,7 +21,7 @@ resource "aws_subnet" "public_subnet_1" {
 
   tags = {
     Name        = "Public Subnet 1"
-    environment = "dev"
+    Environment = "dev"
   }
 }
 
@@ -34,7 +34,7 @@ resource "aws_subnet" "public_subnet_2" {
 
   tags = {
     Name        = "Public Subnet 2"
-    environment = "dev"
+    Environment = "dev"
 
   }
 }
@@ -43,8 +43,8 @@ resource "aws_subnet" "public_subnet_2" {
 resource "aws_internet_gateway" "igw" {
   vpc_id = aws_vpc.my_vpc.id
   tags = {
-    name        = "my_igw"
-    environment = "dev"
+    Name        = "my_igw"
+    Environment = "dev"
 
   }
 }
@@ -53,7 +53,8 @@ resource "aws_internet_gateway" "igw" {
 resource "aws_route_table" "public_route_table" {
   vpc_id = aws_vpc.my_vpc.id
   tags = {
-    name = "public_route_table"
+    Name        = "public_route_table"
+    Environment = "dev"
   }
 
   route {

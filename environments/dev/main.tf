@@ -1,46 +1,26 @@
-# project/environments/dev/main.tf
+provider "aws" {
+  region = "us-east-1"
+}
+
 module "vpc" {
   source = "../../modules/vpc"
 }
 
-module "secrets" {
-  source = "../../modules/secrets_manager"
-}
-
-
-module "rds" {
-  source            = "../../modules/rds"
-  db_name           = "mydatabase" # Provide the name for your database
-  db_username       = module.secrets.DATABASE_USERNAME
-  db_password       = module.secrets.DATABASE_PASSWORD
-  vpc_id            = module.vpc.vpc_id
-  public_subnet_ids = module.vpc.public_subnet_ids
-}
-
 module "ecs" {
   source       = "../../modules/ecs_cluster"
-  cluster_name = "${var.projectName}-${var.enviorment}-ecs"
+  cluster_name = "simple-setup-ecs-cluster"
+  vpc_id       = module.vpc.vpc_id
 }
 
-
-module "ecr" {
-  source          = "../../modules/ecr"
-  repository_name = "${var.projectName}-${var.enviorment}-ecr"
+module "simple_setup_web_app" {
+  source = "../../modules/web-app"
 }
 
-module "alb" {
-  source            = "../../modules/alb"
-  vpc_id            = module.vpc.vpc_id
-  public_subnet_ids = module.vpc.public_subnet_ids
+module "assertion_consumer_service" {
+  source                 = "../../modules/assertion-consumer-service"
+  public_subnet_ids      = module.vpc.public_subnet_ids
+  vpc_id                 = module.vpc.vpc_id
+  ecs_cluster_id         = module.ecs.cluster_id
+  ecs_execution_role_arn = module.ecs.ecs_execution_role_arn
+  ecs_tasks_sg_id        = module.ecs.ecs_tasks_sg_id
 }
-
-module "ecs_service" {
-  source            = "../../modules/ecs_service"
-  cluster_id        = module.ecs.cluster_id
-  ecr_image         = module.ecr.repository_url
-  vpc_id            = module.vpc.vpc_id
-  rds_host_url      = module.rds.rds_host_url
-  public_subnet_ids = module.vpc.public_subnet_ids
-  target_group_arn  = module.alb.target_group_arn
-}
-

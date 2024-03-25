@@ -1,3 +1,21 @@
+resource "aws_secretsmanager_secret" "database_credentials" {
+  name = "database-creds"
+  tags = {
+    Name        = "Database Credentials"
+    Environment = "dev"
+  }
+}
+
+
+
+resource "aws_secretsmanager_secret_version" "database_credentials_version" {
+  secret_id = aws_secretsmanager_secret.database_credentials.id
+  secret_string = jsonencode({
+    username = "steve",
+    password = "password"
+  })
+}
+
 
 # Define security group for RDS
 resource "aws_security_group" "rds_security_group" {
@@ -30,18 +48,18 @@ resource "aws_db_subnet_group" "my_db_subnet_group" {
 
 # Create RDS instance
 resource "aws_db_instance" "my_rds_instance" {
-  identifier                = "my-rds-instance"
-  engine                    = "postgres"
-  instance_class            = "db.t3.micro"
-  username                  = var.db_username
-  password                  = var.db_password
-  allocated_storage         = 20
-  storage_type              = "gp2"
-  multi_az                  = false
-  db_subnet_group_name      = aws_db_subnet_group.my_db_subnet_group.name # Using the DB subnet group created earlier
-  vpc_security_group_ids    = [aws_security_group.rds_security_group.id]  # Assuming you have defined an appropriate security group for the RDS instance
-  db_name                   = "mydatabase"
-  final_snapshot_identifier = "my-rds-snapshot"
+  identifier             = "my-rds-instance"
+  engine                 = "postgres"
+  instance_class         = "db.t3.micro"
+  username               = jsondecode(aws_secretsmanager_secret_version.database_credentials_version.secret_string)["username"]
+  password               = jsondecode(aws_secretsmanager_secret_version.database_credentials_version.secret_string)["password"]
+  allocated_storage      = 20
+  storage_type           = "gp2"
+  multi_az               = false
+  db_subnet_group_name   = aws_db_subnet_group.my_db_subnet_group.name # Using the DB subnet group created earlier
+  vpc_security_group_ids = [aws_security_group.rds_security_group.id]  # Assuming you have defined an appropriate security group for the RDS instance
+  db_name                = "mydatabase"
+  skip_final_snapshot    = true
 
   tags = {
     Name        = "RDS Instance"
