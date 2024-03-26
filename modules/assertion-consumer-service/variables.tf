@@ -36,3 +36,7 @@ variable "ecs_tasks_sg_id" {
   description = "The ID of the ECS tasks security group"
 
 }
+
+variable "target_group_arn" {
+  description = "The ARN of the target group"
+}

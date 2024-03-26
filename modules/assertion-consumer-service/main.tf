@@ -8,15 +8,9 @@ resource "aws_ecr_repository" "ecr_repo" {
   }
 }
 
-
 module "rds" {
   source            = "../rds"
   db_name           = "mydatabase" # Provide the name for your database
-  vpc_id            = var.vpc_id
-  public_subnet_ids = var.public_subnet_ids
-}
-module "alb" {
-  source            = "../alb"
   vpc_id            = var.vpc_id
   public_subnet_ids = var.public_subnet_ids
 }
@@ -97,8 +91,11 @@ resource "aws_ecs_service" "my_service" {
   launch_type         = "FARGATE"
   scheduling_strategy = "REPLICA"
 
+  deployment_controller {
+    type = "CODE_DEPLOY"
+  }
   load_balancer {
-    target_group_arn = module.alb.target_group_arn
+    target_group_arn = var.target_group_arn
     container_name   = "asc-api-service"
     container_port   = 80
   }

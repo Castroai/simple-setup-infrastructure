@@ -1,22 +1,3 @@
-resource "aws_secretsmanager_secret" "database_credentials" {
-  name = "database-creds"
-  tags = {
-    Name        = "Database Credentials"
-    Environment = "dev"
-  }
-}
-
-
-
-resource "aws_secretsmanager_secret_version" "database_credentials_version" {
-  secret_id = aws_secretsmanager_secret.database_credentials.id
-  secret_string = jsonencode({
-    username = "steve",
-    password = "password"
-  })
-}
-
-
 # Define security group for RDS
 resource "aws_security_group" "rds_security_group" {
   name        = "rds_security_group"
@@ -51,8 +32,6 @@ resource "aws_db_instance" "my_rds_instance" {
   identifier             = "my-rds-instance"
   engine                 = "postgres"
   instance_class         = "db.t3.micro"
-  username               = jsondecode(aws_secretsmanager_secret_version.database_credentials_version.secret_string)["username"]
-  password               = jsondecode(aws_secretsmanager_secret_version.database_credentials_version.secret_string)["password"]
   allocated_storage      = 20
   storage_type           = "gp2"
   multi_az               = false
@@ -60,6 +39,8 @@ resource "aws_db_instance" "my_rds_instance" {
   vpc_security_group_ids = [aws_security_group.rds_security_group.id]  # Assuming you have defined an appropriate security group for the RDS instance
   db_name                = "mydatabase"
   skip_final_snapshot    = true
+  username               = "steve"
+  password               = "password"
 
   tags = {
     Name        = "RDS Instance"
