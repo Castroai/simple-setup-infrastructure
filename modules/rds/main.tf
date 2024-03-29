@@ -41,6 +41,7 @@ resource "aws_db_instance" "my_rds_instance" {
   skip_final_snapshot    = true
   username               = "steve"
   password               = "password"
+  publicly_accessible    = true
 
   tags = {
     Name        = "RDS Instance"
