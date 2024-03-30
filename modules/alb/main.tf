@@ -116,55 +116,65 @@ variable "ttl" {
   default     = 60
 }
 # 
-resource "aws_route53_zone" "my_hosted_zone" {
-  name = var.domain_name
+resource "aws_lb_listener_certificate" "example" {
+  listener_arn    = aws_lb_listener.https_listener.arn
+  certificate_arn = aws_acm_certificate.example.arn
 }
 
-resource "aws_acm_certificate" "my_certificate_request" {
-  domain_name               = var.domain_name
-  subject_alternative_names = [var.domain_name]
+
+resource "aws_route53_zone" "primary" {
+  name = "simplesetup.dev"
+}
+
+resource "aws_route53_record" "example" {
+  for_each = {
+    for dvo in aws_acm_certificate.example.domain_validation_options : dvo.domain_name => {
+      name   = dvo.resource_record_name
+      record = dvo.resource_record_value
+      type   = dvo.resource_record_type
+    }
+  }
+
+  allow_overwrite = true
+  name            = each.value.name
+  records         = [each.value.record]
+  ttl             = 60
+  type            = each.value.type
+  zone_id         = aws_route53_zone.primary.zone_id
+}
+
+resource "aws_acm_certificate_validation" "example" {
+  certificate_arn         = aws_acm_certificate.example.arn
+  validation_record_fqdns = [for record in aws_route53_record.example : record.fqdn]
+}
+
+# Route 53 Record for API Subdomain
+resource "aws_route53_record" "api_record" {
+  zone_id = aws_route53_zone.primary.zone_id
+  name    = "api.simplesetup.dev"
+  type    = "A"
+  alias {
+    name                   = aws_lb.lb.dns_name
+    zone_id                = aws_lb.lb.zone_id
+    evaluate_target_health = true
+  }
+}
+
+# Update ACM Certificate
+resource "aws_acm_certificate" "example" {
+  domain_name               = "simplesetup.dev"
+  subject_alternative_names = ["api.simplesetup.dev"] # Add the API subdomain
   validation_method         = "DNS"
-
-  tags = {
-    Name : var.domain_name
-  }
-
-  lifecycle {
-    create_before_destroy = true
-  }
-}
-resource "aws_route53_record" "my_validation_record" {
-  zone_id = aws_route53_zone.my_hosted_zone.zone_id
-  name    = element(aws_acm_certificate.my_certificate_request.domain_validation_options[*].resource_record_name, 0)
-  type    = element(aws_acm_certificate.my_certificate_request.domain_validation_options[*].resource_record_type, 0)
-  records = [element(aws_acm_certificate.my_certificate_request.domain_validation_options[*].resource_record_value, 0)]
-  ttl     = var.ttl
 }
 
-resource "aws_acm_certificate_validation" "my_certificate_validation" {
-  certificate_arn         = aws_acm_certificate.my_certificate_request.arn
-  validation_record_fqdns = [aws_route53_record.my_validation_record.fqdn]
-}
-
-resource "aws_route53_record" "my_caa_record" {
-  zone_id = aws_route53_zone.my_hosted_zone.zone_id
-  name    = var.domain_name
-  type    = "CAA"
-  records = [
-    "0 issue \"amazon.com\"",
-    "0 issuewild \"amazon.com\""
-  ]
-  ttl = var.ttl
-}
 
 
 resource "aws_lb_listener" "https_listener" {
   load_balancer_arn = aws_lb.lb.arn
   port              = "443"
   protocol          = "HTTPS"
-  ssl_policy        = "ELBSecurityPolicy-TLS-1-2-2017-01"
-  certificate_arn   = aws_acm_certificate.my_certificate_request.arn
-
+  ssl_policy        = "ELBSecurityPolicy-TLS13-1-2-2021-06"
+  certificate_arn   = aws_acm_certificate_validation.example.certificate_arn
   default_action {
     type             = "forward"
     target_group_arn = aws_lb_target_group.tg.arn
