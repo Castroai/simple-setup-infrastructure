@@ -47,7 +47,7 @@ resource "aws_lb" "lb" {
 # Target group
 resource "aws_lb_target_group" "tg" {
   name        = "my-tg"
-  port        = 80
+  port        = 443
   protocol    = "HTTP"
   vpc_id      = var.vpc_id
   target_type = "ip"
@@ -70,7 +70,7 @@ resource "aws_lb_target_group" "tg" {
 # Target group
 resource "aws_lb_target_group" "tg-2" {
   name        = "my-tg-2"
-  port        = 80
+  port        = 443
   protocol    = "HTTP"
   vpc_id      = var.vpc_id
   target_type = "ip"
@@ -87,7 +87,6 @@ resource "aws_lb_target_group" "tg-2" {
     Name        = "Target Group 2"
     Environment = "dev"
   }
-
 }
 # Listener
 resource "aws_lb_listener" "listener" {
@@ -96,8 +95,12 @@ resource "aws_lb_listener" "listener" {
   protocol          = "HTTP"
 
   default_action {
-    type             = "forward"
-    target_group_arn = aws_lb_target_group.tg.arn
+    type = "redirect"
+    redirect {
+      port        = "443"
+      protocol    = "HTTPS"
+      status_code = "HTTP_301"
+    }
   }
   tags = {
     Name        = "Listener"
@@ -116,16 +119,18 @@ variable "ttl" {
   default     = 60
 }
 # 
+# Load Balancer Certificate
 resource "aws_lb_listener_certificate" "example" {
   listener_arn    = aws_lb_listener.https_listener.arn
   certificate_arn = aws_acm_certificate.example.arn
 }
 
-
+# Route 53 Zone
 resource "aws_route53_zone" "primary" {
   name = "simplesetup.dev"
 }
 
+# Route 53 Record for Domain Validation
 resource "aws_route53_record" "example" {
   for_each = {
     for dvo in aws_acm_certificate.example.domain_validation_options : dvo.domain_name => {
@@ -143,6 +148,7 @@ resource "aws_route53_record" "example" {
   zone_id         = aws_route53_zone.primary.zone_id
 }
 
+# ACM Certificate Validation
 resource "aws_acm_certificate_validation" "example" {
   certificate_arn         = aws_acm_certificate.example.arn
   validation_record_fqdns = [for record in aws_route53_record.example : record.fqdn]
@@ -160,15 +166,14 @@ resource "aws_route53_record" "api_record" {
   }
 }
 
-# Update ACM Certificate
+# ACM Certificate
 resource "aws_acm_certificate" "example" {
   domain_name               = "simplesetup.dev"
   subject_alternative_names = ["api.simplesetup.dev"] # Add the API subdomain
   validation_method         = "DNS"
 }
 
-
-
+# HTTPS Listener
 resource "aws_lb_listener" "https_listener" {
   load_balancer_arn = aws_lb.lb.arn
   port              = "443"
