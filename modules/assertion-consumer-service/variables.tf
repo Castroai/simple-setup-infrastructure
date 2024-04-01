@@ -16,10 +16,10 @@ variable "vpc_id" {
 
 }
 
-variable "public_subnet_ids" {
-  description = "Public Subnet IDs"
-  type        = list(string)
-}
+# variable "public_subnet_ids" {
+#   description = "Public Subnet IDs"
+#   type        = list(string)
+# }
 
 variable "ecs_cluster_id" {
   description = "ECS Cluster ID"
@@ -39,4 +39,8 @@ variable "ecs_tasks_sg_id" {
 
 variable "target_group_arn" {
   description = "The ARN of the target group"
+}
+
+variable "private_subnet_ids" {
+  description = "Private Subnet IDs"
 }

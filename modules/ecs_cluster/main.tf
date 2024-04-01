@@ -24,6 +24,7 @@ resource "aws_iam_role" "ecs_execution_role" {
         }
       ]
   })
+  description = "ECS Execution Role"
   tags = {
     Name        = "Elastic Container Service Execution Role"
     Environment = "dev"

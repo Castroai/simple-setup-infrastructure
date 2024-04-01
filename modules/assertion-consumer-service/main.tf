@@ -9,10 +9,11 @@ resource "aws_ecr_repository" "ecr_repo" {
 }
 
 module "rds" {
-  source            = "../rds"
-  db_name           = "mydatabase" # Provide the name for your database
-  vpc_id            = var.vpc_id
-  public_subnet_ids = var.public_subnet_ids
+  source             = "../rds"
+  db_name            = "mydatabase" # Provide the name for your database
+  vpc_id             = var.vpc_id
+  ecs_tasks_sg_id    = var.ecs_tasks_sg_id
+  private_subnet_ids = var.private_subnet_ids
 }
 
 # ECS Task Definition
@@ -100,7 +101,7 @@ resource "aws_ecs_service" "my_service" {
     container_port   = 80
   }
   network_configuration {
-    subnets          = var.public_subnet_ids
+    subnets          = var.private_subnet_ids
     security_groups  = [var.ecs_tasks_sg_id]
     assign_public_ip = true
   }

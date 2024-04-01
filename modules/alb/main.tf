@@ -44,7 +44,7 @@ resource "aws_lb" "lb" {
   }
 }
 
-# Target group
+# API Target group
 resource "aws_lb_target_group" "tg" {
   name        = "my-tg"
   port        = 443
@@ -67,7 +67,7 @@ resource "aws_lb_target_group" "tg" {
 
 }
 
-# Target group
+# API Target group 2
 resource "aws_lb_target_group" "tg-2" {
   name        = "my-tg-2"
   port        = 443
@@ -88,7 +88,7 @@ resource "aws_lb_target_group" "tg-2" {
     Environment = "dev"
   }
 }
-# Listener
+# HTTP Redirect Listener
 resource "aws_lb_listener" "listener" {
   load_balancer_arn = aws_lb.lb.arn
   port              = 80
@@ -108,6 +108,96 @@ resource "aws_lb_listener" "listener" {
   }
 }
 
+# HTTPS Listener
+resource "aws_lb_listener" "https_listener" {
+  load_balancer_arn = aws_lb.lb.arn
+  port              = "443"
+  protocol          = "HTTPS"
+  ssl_policy        = "ELBSecurityPolicy-TLS13-1-2-2021-06"
+  certificate_arn   = aws_acm_certificate_validation.example.certificate_arn
+  default_action {
+    type             = "forward"
+    target_group_arn = aws_lb_target_group.tg.arn
+  }
+}
+
+# Client Target group
+resource "aws_lb_target_group" "tg-client" {
+  name        = "my-tg-client"
+  port        = 443
+  protocol    = "HTTP"
+  vpc_id      = var.vpc_id
+  target_type = "ip"
+  health_check {
+    path                = "/"
+    protocol            = "HTTP"
+    port                = "traffic-port"
+    healthy_threshold   = 2
+    unhealthy_threshold = 2
+    timeout             = 3
+    interval            = 30
+  }
+  tags = {
+    Name        = "Target Group client"
+    Environment = "dev"
+  }
+
+}
+
+# Client Target group 2
+resource "aws_lb_target_group" "tg-2-client" {
+  name        = "my-tg-2-client"
+  port        = 443
+  protocol    = "HTTP"
+  vpc_id      = var.vpc_id
+  target_type = "ip"
+  health_check {
+    path                = "/"
+    protocol            = "HTTP"
+    port                = "traffic-port"
+    healthy_threshold   = 2
+    unhealthy_threshold = 2
+    timeout             = 3
+    interval            = 30
+  }
+  tags = {
+    Name        = "Target Group 2 client"
+    Environment = "dev"
+  }
+}
+# HTTP Redirect Listener Client
+resource "aws_lb_listener" "listener_client" {
+  load_balancer_arn = aws_lb.lb.arn
+  port              = 80
+  protocol          = "HTTP"
+
+  default_action {
+    type = "redirect"
+    redirect {
+      port        = "443"
+      protocol    = "HTTPS"
+      status_code = "HTTP_301"
+    }
+  }
+  tags = {
+    Name        = "Listener"
+    Environment = "dev"
+  }
+}
+
+
+# Route 53 Record for Next.js service
+resource "aws_route53_record" "nextjs_record" {
+  zone_id = aws_route53_zone.primary.zone_id
+  name    = "simplesetup.dev"
+  type    = "A"
+  alias {
+    name                   = aws_lb.lb.dns_name
+    zone_id                = aws_lb.lb.zone_id
+    evaluate_target_health = true
+  }
+}
+
 
 variable "domain_name" {
   description = "The domain name for the certificate"
@@ -118,7 +208,7 @@ variable "ttl" {
   description = "The time to live for the record set"
   default     = 60
 }
-# 
+
 # Load Balancer Certificate
 resource "aws_lb_listener_certificate" "example" {
   listener_arn    = aws_lb_listener.https_listener.arn
@@ -173,15 +263,3 @@ resource "aws_acm_certificate" "example" {
   validation_method         = "DNS"
 }
 
-# HTTPS Listener
-resource "aws_lb_listener" "https_listener" {
-  load_balancer_arn = aws_lb.lb.arn
-  port              = "443"
-  protocol          = "HTTPS"
-  ssl_policy        = "ELBSecurityPolicy-TLS13-1-2-2021-06"
-  certificate_arn   = aws_acm_certificate_validation.example.certificate_arn
-  default_action {
-    type             = "forward"
-    target_group_arn = aws_lb_target_group.tg.arn
-  }
-}

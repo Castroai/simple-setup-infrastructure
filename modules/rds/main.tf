@@ -11,6 +11,12 @@ resource "aws_security_group" "rds_security_group" {
     cidr_blocks = ["0.0.0.0/0"] # Adjust this to limit access if needed
   }
 
+  ingress {
+    from_port       = 5432
+    to_port         = 5432
+    protocol        = "tcp"
+    security_groups = [var.ecs_tasks_sg_id]
+  }
   tags = {
     Name        = "RDS Security Group"
     Environment = "dev"
@@ -20,7 +26,7 @@ resource "aws_security_group" "rds_security_group" {
 # Define DB subnet group
 resource "aws_db_subnet_group" "my_db_subnet_group" {
   name       = "my-db-subnet-group"
-  subnet_ids = var.public_subnet_ids
+  subnet_ids = var.private_subnet_ids
   tags = {
     Name        = "RDS Subnet Group"
     Environment = "dev"
@@ -41,7 +47,7 @@ resource "aws_db_instance" "my_rds_instance" {
   skip_final_snapshot    = true
   username               = "steve"
   password               = "password"
-  publicly_accessible    = true
+  publicly_accessible    = false
 
   tags = {
     Name        = "RDS Instance"

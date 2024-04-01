@@ -19,8 +19,13 @@ variable "vpc_id" {
 
 }
 
-variable "public_subnet_ids" {
-  description = "The IDs of the public subnets to place the RDS instance"
+variable "private_subnet_ids" {
+  description = "The IDs of the private subnets to place the RDS instance"
 
 }
 
+
+variable "ecs_tasks_sg_id" {
+  description = "The ID of the security group for the ECS tasks"
+
+}
