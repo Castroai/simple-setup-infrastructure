@@ -6,14 +6,6 @@ module "vpc" {
   source = "../../modules/vpc"
 }
 
-# module "cicd" {
-#   source              = "../../modules/cicd"
-#   aws_ecs_cluster     = "simple-setup-ecs-cluster"
-#   service_name        = module.assertion_consumer_service.service_name
-#   aws_lb_listener_arn = module.alb.listener_arn
-#   aws_lb_target_group = module.alb.target_group_arn
-# }
-
 module "ecs" {
   source                          = "../../modules/ecs_cluster"
   cluster_name                    = "simple-setup-ecs-cluster"
