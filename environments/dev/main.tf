@@ -17,7 +17,7 @@ module "simple_setup_web_app" {
   source                 = "../../modules/web-app"
   ecs_cluster_id         = module.ecs.cluster_id
   ecs_tasks_sg_id        = module.ecs.ecs_tasks_sg_id
-  target_group_arn       = module.alb.target_group_arn
+  target_group_arn       = module.alb.client_target_group_arn
   ecs_execution_role_arn = module.ecs.ecs_execution_role_arn
   private_subnet_ids     = module.vpc.private_subnet_ids
 }
@@ -36,5 +36,5 @@ module "assertion_consumer_service" {
   ecs_cluster_id         = module.ecs.cluster_id
   ecs_execution_role_arn = module.ecs.ecs_execution_role_arn
   ecs_tasks_sg_id        = module.ecs.ecs_tasks_sg_id
-  target_group_arn       = module.alb.target_group_arn
+  target_group_arn       = module.alb.api_target_group_arn
 }

@@ -92,9 +92,9 @@ resource "aws_ecs_service" "my_service" {
   launch_type         = "FARGATE"
   scheduling_strategy = "REPLICA"
 
-  deployment_controller {
-    type = "CODE_DEPLOY"
-  }
+  # deployment_controller {
+  #   type = "CODE_DEPLOY"
+  # }
   load_balancer {
     target_group_arn = var.target_group_arn
     container_name   = "asc-api-service"

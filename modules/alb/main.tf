@@ -43,10 +43,9 @@ resource "aws_lb" "lb" {
     Environment = "dev"
   }
 }
-
 # API Target group
-resource "aws_lb_target_group" "tg" {
-  name        = "my-tg"
+resource "aws_lb_target_group" "api-tg" {
+  name        = "api-tg"
   port        = 443
   protocol    = "HTTP"
   vpc_id      = var.vpc_id
@@ -67,49 +66,18 @@ resource "aws_lb_target_group" "tg" {
 
 }
 
-# API Target group 2
-resource "aws_lb_target_group" "tg-2" {
-  name        = "my-tg-2"
-  port        = 443
-  protocol    = "HTTP"
-  vpc_id      = var.vpc_id
-  target_type = "ip"
-  health_check {
-    path                = "/"
-    protocol            = "HTTP"
-    port                = "traffic-port"
-    healthy_threshold   = 2
-    unhealthy_threshold = 2
-    timeout             = 3
-    interval            = 30
-  }
-  tags = {
-    Name        = "Target Group 2"
-    Environment = "dev"
-  }
-}
-# HTTP Redirect Listener
-resource "aws_lb_listener" "listener" {
+# API HTTPS Listener
+resource "aws_lb_listener" "api_https_listener" {
   load_balancer_arn = aws_lb.lb.arn
-  port              = 80
+  port              = "80"
   protocol          = "HTTP"
-
   default_action {
-    type = "redirect"
-    redirect {
-      port        = "443"
-      protocol    = "HTTPS"
-      status_code = "HTTP_301"
-    }
-  }
-  tags = {
-    Name        = "Listener"
-    Environment = "dev"
+    type             = "forward"
+    target_group_arn = aws_lb_target_group.api-tg.arn
   }
 }
-
-# HTTPS Listener
-resource "aws_lb_listener" "https_listener" {
+# Web HTTPS Listener
+resource "aws_lb_listener" "client_https_listener" {
   load_balancer_arn = aws_lb.lb.arn
   port              = "443"
   protocol          = "HTTPS"
@@ -117,13 +85,13 @@ resource "aws_lb_listener" "https_listener" {
   certificate_arn   = aws_acm_certificate_validation.example.certificate_arn
   default_action {
     type             = "forward"
-    target_group_arn = aws_lb_target_group.tg.arn
+    target_group_arn = aws_lb_target_group.web-tg.arn
   }
 }
 
-# Client Target group
-resource "aws_lb_target_group" "tg-client" {
-  name        = "my-tg-client"
+# Web Target group
+resource "aws_lb_target_group" "web-tg" {
+  name        = "web-tg"
   port        = 443
   protocol    = "HTTP"
   vpc_id      = var.vpc_id
@@ -138,35 +106,17 @@ resource "aws_lb_target_group" "tg-client" {
     interval            = 30
   }
   tags = {
-    Name        = "Target Group client"
+    Name        = "Target Group Web"
     Environment = "dev"
   }
 
 }
 
-# Client Target group 2
-resource "aws_lb_target_group" "tg-2-client" {
-  name        = "my-tg-2-client"
-  port        = 443
-  protocol    = "HTTP"
-  vpc_id      = var.vpc_id
-  target_type = "ip"
-  health_check {
-    path                = "/"
-    protocol            = "HTTP"
-    port                = "traffic-port"
-    healthy_threshold   = 2
-    unhealthy_threshold = 2
-    timeout             = 3
-    interval            = 30
-  }
-  tags = {
-    Name        = "Target Group 2 client"
-    Environment = "dev"
-  }
-}
-# HTTP Redirect Listener Client
-resource "aws_lb_listener" "listener_client" {
+
+
+
+# HTTP Redirect Listener
+resource "aws_lb_listener" "listener" {
   load_balancer_arn = aws_lb.lb.arn
   port              = 80
   protocol          = "HTTP"
@@ -211,7 +161,7 @@ variable "ttl" {
 
 # Load Balancer Certificate
 resource "aws_lb_listener_certificate" "example" {
-  listener_arn    = aws_lb_listener.https_listener.arn
+  listener_arn    = aws_lb_listener.api_https_listener.arn
   certificate_arn = aws_acm_certificate.example.arn
 }
 
